@@ -17,6 +17,8 @@ Are you interested in taking a closer look at [Latte syntax |templating#latte]?
 | Conditions ||
 |---------------------------
 | `{if $cond} … {elseif $cond} … {else} … {/if}`  [if condition |#Conditions] ||
+| `{$cond ? $value1 : $value2}`|[ternary operator |#Conditions] |
+| `{$cond ? $value}`|[shorted "ternary" operator |#Conditions] |
 | `{ifset $var} … {elseifset $var} … {/ifset}`  [if (isset()) condition |#Conditions] ||
 | `{ifCurrent $link} … {/ifCurrent}`  |[special case of {if} for an active link |#Conditions]
 |---------------------------
@@ -53,6 +55,7 @@ Are you interested in taking a closer look at [Latte syntax |templating#latte]?
 |---------------------------
 | `n:class`                      |  [smart class attribute |#n-class]
 | `n:attr`                       |  [smart HTML attributes |#n-attr]
+| `n:tag-if`                     |  miss HTML tag, if the condition is FALSE
 |---------------------------
 | Translations ||
 |---------------------------
@@ -160,6 +163,10 @@ Expression in the `{if}` condition can be placed in the closing macro which is u
 {/if $row}
 \--
 
+.[caution]
+Block `{if}` with condition in end tag doesn't support `{elseif}`. Macro `{else}` is possible to use.
+
+
 `{ifCurrent destination}` macro helps to determine that the destination is the same as the current page. If the link points to the current page we are able to style it differently for example. The trick is that when the link is generated it is detected that the link points to the current page. The result is retrieved from $presenter->getCreatedRequest()->hasFlag('current').
 
 /--html
@@ -178,6 +185,14 @@ Expression in the `{if}` condition can be placed in the closing macro which is u
 {ifCurrent Admin:login}{else}<a href="{link Admin:login}">Sign in!</a>{/ifCurrent}
 \--
 
+
+Ternary operator ?: print first value, if the condition is met. In the other case print second value. It can be use in shortened form, when the missing value is filled with NULL - it means no output.
+
+/--html
+availability: {$stock ? 'In stock' : 'Unavailable'}
+
+shortened: {$stock ? 'In stock'}
+\--
 
 
 Loops `{foreach}`, `{for}`, `{while}`  .{toc: Loops}
@@ -226,7 +241,21 @@ Object behind the `$iterator` variable has [Nette\Object class characteristics |
 {/foreach}
 \--
 
-`{if $iterator->first}<table>{/if}` can be replaced with `{first}<table>{/first}`. Similarly, the condition with `last` can be also written as `{last}</table>{/last}`. Finally, equivalent of `{if !$iterator->last} … {/if}` notation (ie. not the last item) is `{sep} … {/sep}` macro. Usually it marks the separator between the items, for example comma. So, the redundant right comma won't print:
+`{if $iterator->first}<table>{/if}` can be replaced with `{first}<table>{/first}`. Similarly, the condition with `last` can be also written as `{last}</table>{/last}`.
+Macros `{first}` and `{last}` have optional parameter, which can be used as modulo.
+
+/--html
+{foreach $rows as $row}
+	{first}<table>{/first}
+		{first 5}<tr>{/first} {* new row after 5 records *}
+			<td>{$row->value}</td>
+		{last 5}</tr>{/last}
+	{last}</table>{/last}
+{/foreach}
+\--
+
+And finally, equivalent of `{if !$iterator->last} … {/if}` (ie. not last item) is macro `{sep} … {/sep}`.
+Usually it marks separator, for example comma between printed items, thereby provide, that it wont print overflowing righthanded comma:
 
 /--html
 {foreach $items as $item} {$item} {sep}, {/sep} {/foreach}
@@ -239,6 +268,21 @@ There are two special macros you can use inside the loop - `{continueIf ?}` and 
 	{continueIf $row->parent == NULL}
 	...
 {/foreach}
+\--
+
+The loop definition can be merged with defition of outer HTML tag in following way: (print out div tag and his inner value for each row)
+/--html
+<div n:foreach="$rows as $row">
+	...
+</div>
+\--
+Or by inner loop it can repeat only the inside value of tag: (ul shows only once, li for every row)
+/--html
+<ul n:inner-foreach="$rows as $row">
+  <li>
+	...
+  </li>
+</ul>
 \--
 
 
